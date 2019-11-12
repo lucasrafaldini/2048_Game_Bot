@@ -8,8 +8,6 @@ Esse repositório foi feito para que você possa programar o seu bot em Python s
 Para escrever esse bot, eu utilizei como referência os vídeos do The PC Geek. Estão todos em inglês (e com alguns erros), por isso quis colocar esse manualzinho aqui. De qualquer forma, se você quiser dar uma olhada nos vídeos, visite o canal do The PC Geek: https://www.youtube.com/channel/UCu2tUcvNeknPxRN6jhyk6gA
 
 
-
-
 Para começarmos, vamos precisar de duas bibliotecas bastante comuns de Python. Reserve um pouco do seu tempo para ler a documentaçao dessas libs - você vai me agradecer mais tarde. Por estarmos fazendo um bot do zero, sem nenhum tipo de lib ou interface voltada específicamente para a criação de bots, a leitura da documentação é essencial. Além de te ajudar com esse projeto aqui, tenho certeza que a leitura te dará várias ideias para projetos futuros.sso se você ler as documentções, é claro).
 
 Bibliotecas:
@@ -18,10 +16,10 @@ Bibliotecas:
 - PIL ou Pillow
 - Pyautogui
 
-#O PIL
+# PIL
 
 Quando eu disse que ler a documentação te dará várias ideias de projetos, eu pensava principalmente no PIL. A Python Imaging Library é uma lib totalmente voltada para manipulação de imagens. Aqui nesse projeto, utilizaremos somente as funções de captura de tela, de conversão de imagem para preto e branco (grayscale) e a captação do valor de cor de um pixel. Entretanto, essa lib conta om todo tipo de função para trabalhar com imagens que você imagina, o que abre um leque amplo de possibilidades de projetos, como pequenos apps para aplicar filtros em imagens ou simplesmente redimensionadores e conversores de formato de imagem.
 
-#O Pyautogui
+# Pyautogui
 
 ##########################EM CONSTRUÇÃO #########################################
