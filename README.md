@@ -1,6 +1,6 @@
 # 2048_Game_Bot
 
-Antes de tudo, você precisa conhecer o jogo. Então, caso você nunca tenha jogado 2048 e está aqui somente procurando um novo projeto em Python para programar, entre em http://2048game.com/ e jogue um pouco. Entenda as regras do jogo e depois podemos começar o nosso bot."
+Antes de tudo, você precisa conhecer o jogo. Então, caso você nunca tenha jogado 2048 e está aqui somente procurando um novo projeto em Python para programar, entre em http://2048game.com/ e jogue um pouco. Entenda as regras do jogo e depois podemos começar o nosso bot.
 
 
 Esse repositório foi feito para que você possa programar o seu bot em Python sem muita dificuldade, com um material em português e aprendendo o que cada passo determina dentro do corpo do programa que está sendo escrito.
