@@ -22,4 +22,4 @@ Quando eu disse que ler a documentação te dará várias ideias de projetos, eu
 
 # Pyautogui
 
-##########################EM CONSTRUÇÃO #########################################
+O PyAutoGui vai te dar o controle que você precisa sem consumir tanta memória quanto um framework de testes como o Selenium, por exemplo. Como o objetivo aqui é ter acesso a alguns comandos simples de teclado, ele é a biblioteca ideal. Assim como o PIL, também tem uma documentação muito boa que deve ser lida por todo dev.
