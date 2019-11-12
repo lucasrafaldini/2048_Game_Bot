@@ -1,11 +1,10 @@
 # Installer logs
 pip-log.txt
-pip-delete-this-directory.txt
 
 # virtualenv
-.2048
+/.2048/
 .2048/
+.2048
 
 # IDE
 .idea
-.idea/
