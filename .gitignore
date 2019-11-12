@@ -1,3 +1,5 @@
+.DS_Store
+
 # Installer logs
 pip-log.txt
 
@@ -6,4 +8,5 @@ pip-log.txt
 .2048
 
 # IDE
+.idea/
 .idea
