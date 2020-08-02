@@ -6,7 +6,9 @@ pip-log.txt
 # virtualenv
 .2048/
 .2048
+.env
 
 # IDE
 .idea/
 .idea
+
