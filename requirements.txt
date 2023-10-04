@@ -1,6 +1,6 @@
 EasyProcess==0.3
 entrypoint2==0.2.1
-jeepney==0.4.3
+jeepney==0.8.0
 MouseInfo==0.1.3
 mss==6.0.0
 Pillow==10.0.1
