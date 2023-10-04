@@ -12,4 +12,4 @@ PyRect==0.1.4
 pyscreenshot==2.2
 PyScreeze==0.1.26
 python3-xlib==0.15
-PyTweening==1.0.3
+PyTweening==1.0.7
