@@ -1,4 +1,4 @@
-EasyProcess==0.3
+EasyProcess==1.1
 entrypoint2==1.1
 jeepney==0.8.0
 MouseInfo==0.1.3
