@@ -7,7 +7,7 @@ Pillow==10.0.1
 PyAutoGUI==0.9.54
 PyGetWindow==0.0.9
 PyMsgBox==1.0.8
-pyperclip==1.8.0
+pyperclip==1.8.2
 PyRect==0.1.4
 pyscreenshot==2.2
 PyScreeze==0.1.26
