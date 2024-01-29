@@ -6,7 +6,7 @@ mss==9.0.1
 Pillow==10.2.0
 PyAutoGUI==0.9.54
 PyGetWindow==0.0.9
-PyMsgBox==1.0.8
+PyMsgBox==1.0.9
 pyperclip==1.8.2
 PyRect==0.1.4
 PyScreeze==0.1.30
