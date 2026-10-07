@@ -1,0 +1,25 @@
+agents:
+  expectimax:
+    depth: 6
+    time_limit: 0.1
+  expectimax-fast:
+    depth: 4
+    time_limit: 0.05
+  greedy: {}
+  mcts:
+    simulations: 100
+    time_limit: 0.1
+  snake: {}
+benchmark:
+  max_moves: 10000
+  num_games: 100
+  num_workers: 4
+  parallel: true
+  record_history: false
+comparison:
+  agents:
+  - expectimax
+  - mcts
+  - greedy
+  - snake
+  num_games: 50

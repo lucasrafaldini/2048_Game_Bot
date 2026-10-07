@@ -1,0 +1,4 @@
+[console_scripts]
+game2048-benchmark = game2048.benchmarks.cli:app
+game2048-dashboard = game2048.visualization.streamlit_app:main
+game2048-play = game2048.core.game:play_cli

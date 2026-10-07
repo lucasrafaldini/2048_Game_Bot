@@ -1,0 +1,107 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "game2048"
+version = "2.0.0"
+description = "Modern 2048 game engine with AI agents, benchmarking, and data science tooling"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Lucas Rafaldini", email = "lucas@example.com"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Simulation",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "plotly>=5.18",
+    "streamlit>=1.30",
+    "typer>=0.9",
+    "rich>=13.7",
+    "pyyaml>=6.0",
+    "sqlalchemy>=2.0",
+    "tqdm>=4.66",
+    "orjson>=3.9",
+]
+
+[project.optional-dependencies]
+rl = [
+    "torch>=2.2",
+    "gymnasium>=0.29",
+    "stable-baselines3>=2.0",
+]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "pytest-benchmark>=4.0",
+    "ruff>=0.3",
+    "mypy>=1.8",
+    "pre-commit>=3.6",
+    "ipykernel>=6.29",
+    "jupyter>=1.0",
+]
+all = [
+    "torch>=2.2",
+    "gymnasium>=0.29",
+    "stable-baselines3>=2.0",
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.3",
+    "mypy>=1.8",
+    "pre-commit>=3.6",
+    "ipykernel>=6.29",
+    "jupyter>=1.0",
+]
+
+[project.scripts]
+game2048-benchmark = "game2048.benchmarks.cli:app"
+game2048-dashboard = "game2048.visualization.streamlit_app:main"
+game2048-play = "game2048.core.game:play_cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["game2048*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "T20", "PIE", "PT", "PTH", "ERA", "PL", "TRY", "ARG", "PTH", "FA"]
+ignore = ["S101", "PLW2901"]
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+strict_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["src/game2048"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "def __repr__", "raise AssertionError", "raise NotImplementedError"]
