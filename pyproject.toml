@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "game2048"
-version = "2.0.1"
+version = "2.1.0"
 description = "Modern 2048 game engine with AI agents, benchmarking, and data science tooling"
 readme = "README.md"
 requires-python = ">=3.10"

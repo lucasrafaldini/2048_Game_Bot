@@ -244,5 +244,139 @@ def from_config(
             console.print(f"[green]Comparison saved to {output}[/green]")
 
 
+@app.command()
+def fast(
+    policy: str = typer.Option(
+        "greedy", "-a", "--policy",
+        help="Fast policy: random, greedy, snake, expectimax, expectimax-3, ...",
+    ),
+    games: int = typer.Option(1000, "-n", "--games", help="Number of games"),
+    seed: int = typer.Option(0, "-s", "--seed", help="Base seed (game i uses seed+i)"),
+    workers: Optional[int] = typer.Option(None, "-w", "--workers", help="Worker processes"),
+    verify: bool = typer.Option(
+        True, "--verify/--no-verify",
+        help="Verify accuracy against the reference engine before benchmarking",
+    ),
+    max_moves: int = typer.Option(100_000, "-m", "--max-moves", help="Max moves per game"),
+    output: Optional[Path] = typer.Option(None, "-o", "--output", help="Output JSON file"),
+):
+    """
+    High-speed benchmark using the self-contained bitboard engine.
+
+    Runs an accuracy suite (fast engine vs reference engine) and then
+    simulates thousands of games with turn-by-turn statistics.
+    """
+    import functools
+
+    from .accuracy import (
+        fuzz_moves_equivalence,
+        replay_games_equivalence,
+        summarize_results,
+        tile_reach_probabilities,
+        turn_statistics,
+    )
+    from ..core.fast import batch_simulate, greedy_policy
+
+    # --- Accuracy verification -------------------------------------------------
+    if verify:
+        console.print("[bold]Verifying fast engine against reference engine...[/bold]")
+        fuzz = fuzz_moves_equivalence(n_boards=2000, seed=seed + 999)
+        console.print(f"  Move fuzzing: {fuzz.directions_tested:,} comparisons -> "
+                      + ("[green]PASS[/green]" if fuzz.passed else "[red]FAIL[/red]"))
+
+        replay = replay_games_equivalence(greedy_policy, n_games=10, seed=seed + 998)
+        console.print(f"  Game replay: {replay.turns_compared:,} turns -> "
+                      + ("[green]PASS[/green]" if replay.passed else "[red]FAIL[/red]"))
+        if not (fuzz.passed and replay.passed):
+            for m in (fuzz.mismatches + replay.mismatches)[:5]:
+                console.print(f"  [red]{m}[/red]")
+            console.print("[red]Aborting benchmark: engine is not equivalent to reference.[/red]")
+            raise typer.Exit(1)
+
+    # --- High-speed batch simulation -------------------------------------------
+    policy_fn = functools.partial(_fast_policy_factory, policy)
+    console.print(f"[bold]Running {games:,} games with policy '{policy}'...[/bold]")
+    results = batch_simulate(
+        policy_fn, n_games=games, seed=seed, workers=workers,
+        max_moves=max_moves, record_curves=True,
+    )
+    summary = summarize_results(results)
+
+    table = Table(title=f"Fast Benchmark - {policy} ({games:,} games)")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green", justify="right")
+    table.add_row("Games", f"{summary.games:,}")
+    table.add_row("Score mean", f"{summary.score_mean:,.1f}")
+    table.add_row("Score median", f"{summary.score_median:,.1f}")
+    table.add_row("Score std", f"{summary.score_std:,.1f}")
+    table.add_row("Score 95% CI", f"[{summary.score_ci95[0]:,.0f}, {summary.score_ci95[1]:,.0f}]")
+    table.add_row("Score range", f"{summary.score_min:,} - {summary.score_max:,}")
+    table.add_row("Moves mean", f"{summary.moves_mean:,.1f}")
+    table.add_row("Win rate (2048)", f"{summary.win_rate:.1%}")
+    table.add_row("Loss rate", f"{summary.loss_rate:.1%}")
+    table.add_row("Throughput", f"{summary.moves_per_second:,.0f} moves/s")
+    console.print(table)
+
+    reach = tile_reach_probabilities(results)
+    reach_table = Table(title="P(max tile >= milestone)")
+    reach_table.add_column("Tile", style="cyan")
+    reach_table.add_column("Probability", style="green", justify="right")
+    for tile, p in reach.items():
+        reach_table.add_row(str(tile), f"{p:.1%}")
+    console.print(reach_table)
+
+    turns = turn_statistics(results)
+    if "error" not in turns:
+        curve_table = Table(title="Turn-by-turn evolution")
+        curve_table.add_column("Turn", style="cyan", justify="right")
+        curve_table.add_column("Avg score", style="green", justify="right")
+        curve_table.add_column("Best max tile", style="magenta", justify="right")
+        curve_table.add_column("Games alive", style="yellow", justify="right")
+        for t in sorted(turns["score_at_turn"].keys()):
+            curve_table.add_row(
+                str(t),
+                f"{turns['score_at_turn'][t]:,.0f}",
+                str(turns["max_tile_at_turn"][t]),
+                f"{turns['survival_sample'][t]:.0%}",
+            )
+        console.print(curve_table)
+
+    if output:
+        payload = {
+            "policy": policy,
+            "games": games,
+            "seed": seed,
+            "summary": summary.to_dict(),
+            "tile_reach_probabilities": {str(k): v for k, v in reach.items()},
+            "turn_statistics": turns,
+        }
+        with open(output, "w") as f:
+            json.dump(payload, f, indent=2)
+        console.print(f"[green]Results saved to {output}[/green]")
+
+
+def _fast_policy_factory(name: str):
+    """Module-level (picklable) factory returning a bitboard policy."""
+    from ..core.fast import (
+        greedy_policy,
+        make_expectimax_policy,
+        random_policy,
+        snake_policy,
+    )
+    if name == "random":
+        return random_policy
+    if name == "greedy":
+        return greedy_policy
+    if name == "snake":
+        return snake_policy
+    if name == "expectimax" or name.startswith("expectimax-"):
+        parts = name.split("-")
+        depth = int(parts[1]) if len(parts) > 1 else 2
+        return make_expectimax_policy(depth)
+    raise ValueError(
+        f"Unknown fast policy: {name} (available: random, greedy, snake, expectimax[-N])"
+    )
+
+
 if __name__ == "__main__":
     app()

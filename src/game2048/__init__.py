@@ -31,6 +31,18 @@ from .core import (
     BOARD_SIZE,
     WIN_TILE,
     simulate_move,
+    FastGame,
+    FastResult,
+    grid_to_bits,
+    bits_to_grid,
+    apply_move_bits,
+    can_move_bits,
+    valid_moves_bits,
+    random_policy,
+    greedy_policy,
+    snake_policy,
+    make_expectimax_policy,
+    batch_simulate,
 )
 from .ai import (
     Agent,
@@ -85,10 +97,10 @@ from .utils import (
     get_game_phase,
 )
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 __all__ = [
-    # Core
+    # Core (reference engine)
     "Board2048",
     "Game2048",
     "GameResult",
@@ -97,6 +109,19 @@ __all__ = [
     "BOARD_SIZE",
     "WIN_TILE",
     "simulate_move",
+    # Core (fast bitboard engine)
+    "FastGame",
+    "FastResult",
+    "grid_to_bits",
+    "bits_to_grid",
+    "apply_move_bits",
+    "can_move_bits",
+    "valid_moves_bits",
+    "random_policy",
+    "greedy_policy",
+    "snake_policy",
+    "make_expectimax_policy",
+    "batch_simulate",
     # AI
     "Agent",
     "BaseAgent",

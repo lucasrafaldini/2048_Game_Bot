@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-10-26 - "Motor Bitboard de Alta Velocidade"
+
+### ⚡ Engine rápido e autocontido (`game2048.core.fast`)
+
+- **Bitboard 64-bit**: tabuleiro inteiro em um único inteiro (16 nibbles,
+  um por célula, armazenando o expoente do tile: 0 = vazio, 1 = tile 2,
+  ..., 15 = tile 32768).
+- **Tabelas pré-computadas**: movimentos resolvem-se em 4 lookups de tabela
+  (65536 entradas pré-calculadas para linha) - sem lógica de compressão
+  em tempo de jogo.
+- **Zero dependências**: apenas `random` + `dataclasses` da stdlib.
+- **`FastGame`**: jogo completo autocontido, semeável (100% reprodutível),
+  com log de spawns para replay determinístico em outros engines.
+- **Policies rápidas**: `random_policy`, `greedy_policy`, `snake_policy`,
+  `make_expectimax_policy(depth)` (expectimax no bitboard).
+- **`batch_simulate`**: simulação em lote com `ProcessPoolExecutor`,
+  seeds por jogo, totalmente reprodutível.
+- **Throughput**: ~45.000 moves/s (núcleo único, policy aleatória).
+
+### ✅ Acurácia verificada (`game2048.benchmarks.accuracy`)
+
+- **Fuzzing de movimentos**: 20.000 comparações (5.000 tabuleiros aleatórios ×
+  4 direções) contra o engine de referência `Board2048` - grid, score e flag
+  de movimento idênticos. **0 divergências.**
+- **Replay de jogos completos**: partida inteira do engine rápido é
+  "replayada" turn-by-turn no engine de referência (spawns forçados
+  idênticos) - grid e score idênticos após **cada** turno.
+  17.243 turnos verificados, 0 divergências.
+- **`AccuracyReport`**: contadores + pass/fail para CI.
+
+### 📊 Estatística turn-by-turn
+
+- `summarize_results`: média/mediana/dp/IC 95%, distribuição de max tile,
+  win rate, throughput.
+- `tile_reach_probabilities`: P(max ≥ 128/256/512/1024/2048).
+- `turn_statistics`: curva de score por turno, melhor max tile por turno,
+  curva de sobrevivência.
+
+### 🖥️ CLI
+
+- Novo comando `game2048-benchmark fast`: verifica acurácia contra o engine
+  de referência, roda N jogos em paralelo e imprime estatística completa
+  (summary + P(max tile) + evolução turn-by-turn). Exporta JSON com `-o`.
+
+### 🧪 Qualidade
+
+- 33 testes novos (`tests/test_fast.py`): equivalência vs referência,
+  determinismo, distribuição de spawns (90/10), alinhamento do log de
+  spawns, estatísticas, throughput. **92 testes no total, 100% pass.**
+- Correção de bug no fast engine encontrada pelo próprio harness
+  (`bits_to_grid` off-by-one) - prova de que o harness funciona.
+
 ## [2.0.0] - 2026-10-07 - "A Era das IAs & 10 Anos de Carreira"
 
 ### 🎯 Contexto

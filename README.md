@@ -58,6 +58,46 @@ game2048-benchmark run expectimax -n 100 -o results.json
 game2048-benchmark compare "expectimax,mcts,greedy,snake" -n 50 -o comparison.json
 ```
 
+### High-Speed Simulation (bitboard engine)
+
+The fast bitboard engine is a self-contained, ultra-fast 2048 implementation
+verified move-by-move against the reference engine - ideal for accuracy
+testing, high-speed turn simulation and statistical analysis.
+
+```bash
+# High-speed benchmark: verifies accuracy first, then simulates 1000 games
+game2048-benchmark fast --policy greedy -n 1000 --seed 42 -o fast_results.json
+
+# Disable the accuracy pre-check
+game2048-benchmark fast --policy expectimax -n 200 --no-verify
+```
+
+```python
+from game2048 import FastGame, greedy_policy, batch_simulate, summarize_results
+
+# Single high-speed game (~45k moves/s, fully reproducible)
+game = FastGame(seed=42)
+result = game.play(greedy_policy)
+print(f"Score: {result.final_score}, Max: {result.max_tile}, State: {result.state}")
+
+# Batch simulation with statistics (parallel across CPU cores)
+results = batch_simulate(greedy_policy, n_games=1000, seed=0)
+summary = summarize_results(results)
+print(f"Mean score: {summary.score_mean:.0f} ± {summary.score_ci95}")
+print(f"P(reach 2048): {summary.win_rate:.1%}")
+
+# Accuracy verification against the reference engine (Board2048)
+from game2048.benchmarks.accuracy import run_accuracy_suite
+report = run_accuracy_suite(n_fuzz_boards=2000, n_replay_games=20)
+print(report.summary())  # "PASS: ... 0 mismatches"
+```
+
+How it works:
+- Board is a single 64-bit integer (16 nibbles = tile exponents)
+- Moves use precomputed 65536-entry row tables (4 lookups per move)
+- Zero dependencies (stdlib only); spawns logged for exact replay
+- Accuracy harness replays full games turn-by-turn on the reference engine
+
 ### Launch Dashboard
 
 ```bash
