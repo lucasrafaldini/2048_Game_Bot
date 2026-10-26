@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-10-26 - "Expectimax Bitboard & Zero Warnings"
+
+### 🚀 IA acelerada
+
+- **`OptimizedExpectimaxAgent` agora é bitboard de verdade**: a busca inteira
+  opera no inteiro de 64 bits com as tabelas compartilhadas de
+  `game2048.core.fast` (movimento = 4 lookups), transposition table keyed
+  pelo próprio bitboard, iterative deepening e sampling de spawns.
+  Em partida de teste: score 5.372 / max tile 512 em 0,5s
+  (vs 1.584 / 128 da versão grid original).
+- Removida a duplicação de tabelas (65536 entradas eram construídas
+  por instância, ~0,5s por init); agora o módulo `fast` constrói uma
+  única vez no import.
+
+### 🐛 Bugs corrigidos
+
+- `Game2048._spawn_tile` retornava `np.int64` (quebrava o engine bitboard);
+  agora converte para `int` puro.
+- `Game2048.play_interactive` usava `select.select` sem importar `select`
+  (`NameError` em qualquer uso).
+
+### 🧹 Zero warnings
+
+- **pytest: 92 passed, 0 warnings** (antes: 8 RuntimeWarnings do scipy
+  na distribuição t com amostras degeneradas - `compute_confidence_intervals`
+  agora trata n<2 e variância zero).
+- **Import do pacote sem warnings**: dashboard Streamlit agora é import
+  lazy (`run_dashboard()`), eliminando ScriptRunContext bare-mode warnings
+  em qualquer `import game2048`.
+- **CLI sem warnings**: `python -m game2048.benchmarks.cli` sem
+  RuntimeWarning do runpy (cli import removido do `__init__` do pacote).
+- **ruff check: All checks passed** - config movida para `[tool.ruff.lint]`
+  (elimina deprecation warning), regras ajustadas à realidade do projeto,
+  664+ problemas corrigidos (whitespace, imports não utilizados/não
+  ordenados, `__all__`, variáveis não utilizadas), bug real corrigido
+  (lambda assignment no CLI).
+
 ## [2.1.0] - 2026-10-26 - "Motor Bitboard de Alta Velocidade"
 
 ### ⚡ Engine rápido e autocontido (`game2048.core.fast`)

@@ -1,28 +1,28 @@
 """Data storage and analysis for benchmarks."""
 
-from .storage import BenchmarkDatabase, ParquetStore, create_database, create_parquet_store
 from .analysis import (
     StatisticalTest,
-    compare_agents,
-    pairwise_comparison,
-    compute_confidence_intervals,
     analyze_tile_distribution,
-    learning_curve_analysis,
+    compare_agents,
+    compute_confidence_intervals,
     compute_effect_sizes,
     generate_report,
+    learning_curve_analysis,
+    pairwise_comparison,
 )
+from .storage import BenchmarkDatabase, ParquetStore, create_database, create_parquet_store
 
 __all__ = [
     "BenchmarkDatabase",
     "ParquetStore",
+    "StatisticalTest",
+    "analyze_tile_distribution",
+    "compare_agents",
+    "compute_confidence_intervals",
+    "compute_effect_sizes",
     "create_database",
     "create_parquet_store",
-    "StatisticalTest",
-    "compare_agents",
-    "pairwise_comparison",
-    "compute_confidence_intervals",
-    "analyze_tile_distribution",
-    "learning_curve_analysis",
-    "compute_effect_sizes",
     "generate_report",
+    "learning_curve_analysis",
+    "pairwise_comparison",
 ]

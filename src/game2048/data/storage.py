@@ -6,18 +6,17 @@ import json
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Optional
 
 import pandas as pd
 
 
 class BenchmarkDatabase:
     """SQLite database for storing benchmark results."""
-    
+
     def __init__(self, db_path: str | Path = "benchmarks.db"):
         self.db_path = Path(db_path)
         self._init_db()
-    
+
     def _init_db(self) -> None:
         """Initialize database schema."""
         with self._connect() as conn:
@@ -40,7 +39,7 @@ class BenchmarkDatabase:
                     avg_move_time REAL
                 )
             """)
-            
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS games (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,16 +56,16 @@ class BenchmarkDatabase:
                     FOREIGN KEY (run_id) REFERENCES runs (id)
                 )
             """)
-            
+
             conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_runs_agent 
+                CREATE INDEX IF NOT EXISTS idx_runs_agent
                 ON runs (agent_name)
             """)
             conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_games_run 
+                CREATE INDEX IF NOT EXISTS idx_games_run
                 ON games (run_id)
             """)
-    
+
     @contextmanager
     def _connect(self):
         conn = sqlite3.connect(self.db_path)
@@ -76,7 +75,7 @@ class BenchmarkDatabase:
             conn.commit()
         finally:
             conn.close()
-    
+
     def save_run(self, result: dict, config: dict) -> int:
         """Save a benchmark run and return run ID."""
         with self._connect() as conn:
@@ -104,7 +103,7 @@ class BenchmarkDatabase:
                 result.get("avg_move_time"),
             ))
             run_id = cursor.lastrowid
-            
+
             # Save individual games
             for game in result.get("games", []):
                 conn.execute("""
@@ -125,10 +124,10 @@ class BenchmarkDatabase:
                     json.dumps(game.get("nodes_evaluated", [])),
                     json.dumps([b.tolist() for b in game.get("board_history", [])]),
                 ))
-            
+
             return run_id
-    
-    def load_runs(self, agent_name: Optional[str] = None) -> list[dict]:
+
+    def load_runs(self, agent_name: str | None = None) -> list[dict]:
         """Load all runs, optionally filtered by agent."""
         with self._connect() as conn:
             if agent_name:
@@ -140,9 +139,9 @@ class BenchmarkDatabase:
                 rows = conn.execute(
                     "SELECT * FROM runs ORDER BY timestamp DESC"
                 ).fetchall()
-            
+
             return [dict(row) for row in rows]
-    
+
     def load_games(self, run_id: int) -> list[dict]:
         """Load all games for a run."""
         with self._connect() as conn:
@@ -150,7 +149,7 @@ class BenchmarkDatabase:
                 "SELECT * FROM games WHERE run_id = ? ORDER BY seed",
                 (run_id,)
             ).fetchall()
-            
+
             games = []
             for row in rows:
                 game = dict(row)
@@ -158,10 +157,10 @@ class BenchmarkDatabase:
                 game["nodes_evaluated"] = json.loads(game["nodes_evaluated_json"])
                 game["board_history"] = json.loads(game["board_history_json"])
                 games.append(game)
-            
+
             return games
-    
-    def to_dataframe(self, agent_name: Optional[str] = None) -> pd.DataFrame:
+
+    def to_dataframe(self, agent_name: str | None = None) -> pd.DataFrame:
         """Load all games as a pandas DataFrame."""
         with self._connect() as conn:
             if agent_name:
@@ -179,14 +178,14 @@ class BenchmarkDatabase:
                     JOIN runs r ON g.run_id = r.id
                 """
                 df = pd.read_sql_query(query, conn)
-            
+
             return df
-    
+
     def get_agent_summary(self) -> pd.DataFrame:
         """Get summary statistics per agent."""
         with self._connect() as conn:
             return pd.read_sql_query("""
-                SELECT 
+                SELECT
                     agent_name,
                     COUNT(*) as num_runs,
                     SUM(num_games) as total_games,
@@ -203,16 +202,16 @@ class BenchmarkDatabase:
 
 class ParquetStore:
     """Parquet-based storage for large-scale benchmark data."""
-    
+
     def __init__(self, base_path: str | Path = "benchmark_data"):
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
-    
+
     def save_run(self, result: dict, config: dict, run_id: str) -> None:
         """Save run as Parquet files."""
         run_dir = self.base_path / run_id
         run_dir.mkdir(exist_ok=True)
-        
+
         # Save metadata
         meta = {
             "agent_name": result["agent_name"],
@@ -221,26 +220,26 @@ class ParquetStore:
             "summary": {k: v for k, v in result.items() if k != "games"},
         }
         (run_dir / "metadata.json").write_text(json.dumps(meta, indent=2))
-        
+
         # Save games as Parquet
         if result.get("games"):
             df = pd.DataFrame(result["games"])
             df.to_parquet(run_dir / "games.parquet", index=False)
-    
+
     def load_run(self, run_id: str) -> dict:
         """Load run from Parquet files."""
         run_dir = self.base_path / run_id
-        
+
         meta = json.loads((run_dir / "metadata.json").read_text())
         games_df = pd.read_parquet(run_dir / "games.parquet")
-        
+
         return {
             **meta["summary"],
             "agent_name": meta["agent_name"],
             "timestamp": meta["timestamp"],
             "games": games_df.to_dict("records"),
         }
-    
+
     def load_all(self) -> dict:
         """Load all runs as a combined DataFrame."""
         all_games = []
@@ -251,11 +250,11 @@ class ParquetStore:
                 df["agent_name"] = meta["agent_name"]
                 df["run_timestamp"] = meta["timestamp"]
                 all_games.append(df)
-        
+
         if all_games:
             return pd.concat(all_games, ignore_index=True)
         return pd.DataFrame()
-    
+
     def list_runs(self) -> list[dict]:
         """List all available runs."""
         runs = []

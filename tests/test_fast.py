@@ -8,7 +8,6 @@ import time
 import pytest
 
 from game2048.benchmarks.accuracy import (
-    AccuracyReport,
     fuzz_moves_equivalence,
     replay_games_equivalence,
     summarize_results,
@@ -116,7 +115,7 @@ class TestFastGame:
         for seed in range(50):
             game = FastGame(seed=seed)
             for _ in range(200):
-                moved, _, state = game.step(random_policy(game.bits))
+                _, _, state = game.step(random_policy(game.bits))
                 if state != "playing":
                     break
             # tally spawned values from the spawn log
@@ -144,7 +143,6 @@ class TestFastGame:
         grid = [[2, 4, 8, 16], [32, 64, 128, 256], [2, 4, 8, 16], [32, 64, 128, 2]]
         game = FastGame(seed=0)
         game._bits = grid_to_bits(grid)
-        ref_grid = [row[:] for row in grid]
         # reference semantics: full board, no merges available -> lost
         assert game.state() == "lost"
 

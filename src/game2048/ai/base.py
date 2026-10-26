@@ -5,18 +5,16 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Protocol
 
-import numpy as np
-
 from ..core.board import Board2048
 from ..core.constants import Direction
 
 
 class Agent(Protocol):
     """Protocol for game agents."""
-    
+
     def __call__(self, board: Board2048) -> Direction:
         ...
-    
+
     @property
     def name(self) -> str:
         ...
@@ -24,33 +22,32 @@ class Agent(Protocol):
 
 class BaseAgent(ABC):
     """Abstract base class for all agents."""
-    
+
     def __init__(self, name: str | None = None):
         self._name = name or self.__class__.__name__
         self._nodes_evaluated = 0
         self._max_depth_reached = 0
-    
+
     @property
     def name(self) -> str:
         return self._name
-    
+
     @abstractmethod
     def get_move(self, board: Board2048) -> Direction:
         """Get the best move for the given board."""
-        pass
-    
+
     def __call__(self, board: Board2048) -> Direction:
         self._nodes_evaluated = 0
         self._max_depth_reached = 0
         return self.get_move(board)
-    
+
     def get_stats(self) -> dict:
         """Return search statistics."""
         return {
             "nodes_evaluated": self._nodes_evaluated,
             "max_depth_reached": self._max_depth_reached,
         }
-    
+
     def reset_stats(self) -> None:
         self._nodes_evaluated = 0
         self._max_depth_reached = 0
@@ -58,7 +55,7 @@ class BaseAgent(ABC):
 
 class HeuristicAgent(BaseAgent):
     """Base class for heuristic-based agents."""
-    
+
     def __init__(self, name: str | None = None):
         super().__init__(name)
         self.weights = {
@@ -70,7 +67,7 @@ class HeuristicAgent(BaseAgent):
             "edge_max": 0.5,
             "corner_max": 1.0,
         }
-    
+
     def evaluate(self, board: Board2048) -> float:
         """Evaluate board position. Higher is better."""
         return (
@@ -82,16 +79,16 @@ class HeuristicAgent(BaseAgent):
             self.weights["edge_max"] * self._edge_max_score(board) +
             self.weights["corner_max"] * self._corner_max_score(board)
         )
-    
+
     def _empty_score(self, board: Board2048) -> float:
         """Score based on number of empty cells."""
         return len(board.empty_cells)
-    
+
     def _monotonicity_score(self, board: Board2048) -> float:
         """Score based on monotonicity (tiles decreasing in a direction)."""
         grid = board.grid
         scores = [0, 0, 0, 0]  # up, down, left, right
-        
+
         # Check rows (left/right)
         for r in range(4):
             row = grid[r]
@@ -100,7 +97,7 @@ class HeuristicAgent(BaseAgent):
                     scores[2] += row[c] - row[c + 1]  # left
                 if row[c] <= row[c + 1] and row[c + 1] != 0:
                     scores[3] += row[c + 1] - row[c]  # right
-        
+
         # Check columns (up/down)
         for c in range(4):
             for r in range(3):
@@ -108,9 +105,9 @@ class HeuristicAgent(BaseAgent):
                     scores[0] += grid[r][c] - grid[r + 1][c]  # up
                 if grid[r][c] <= grid[r + 1][c] and grid[r + 1][c] != 0:
                     scores[1] += grid[r + 1][c] - grid[r][c]  # down
-        
+
         return max(scores)
-    
+
     def _smoothness_score(self, board: Board2048) -> float:
         """Score based on smoothness (similar adjacent tiles)."""
         grid = board.grid
@@ -127,12 +124,12 @@ class HeuristicAgent(BaseAgent):
                 if r + 1 < 4 and grid[r + 1][c] != 0:
                     smoothness -= abs(val - grid[r + 1][c])
         return smoothness
-    
+
     def _max_tile_score(self, board: Board2048) -> float:
         """Score based on max tile (log scale)."""
         import math
         return math.log2(board.max_tile) if board.max_tile > 0 else 0
-    
+
     def _merge_potential(self, board: Board2048) -> float:
         """Score based on potential merges."""
         grid = board.grid
@@ -146,7 +143,7 @@ class HeuristicAgent(BaseAgent):
                 if r + 1 < 4 and grid[r][c] == grid[r + 1][c]:
                     merges += 1
         return merges
-    
+
     def _edge_max_score(self, board: Board2048) -> float:
         """Score for max tile on edge."""
         grid = board.grid
@@ -164,7 +161,7 @@ class HeuristicAgent(BaseAgent):
             if grid[r][3] == max_val:
                 edge_score += 1
         return edge_score
-    
+
     def _corner_max_score(self, board: Board2048) -> float:
         """Score for max tile in corner (ideal for snake strategy)."""
         grid = board.grid
@@ -174,24 +171,24 @@ class HeuristicAgent(BaseAgent):
             if grid[r][c] == max_val:
                 return 1.0
         return 0.0
-    
+
     def get_move(self, board: Board2048) -> Direction:
         """Default greedy move selection based on heuristic evaluation."""
         from ..core.board import simulate_move
         from ..core.constants import Direction
-        
+
         valid_moves = board.get_valid_moves()
         if not valid_moves:
             return Direction.UP
-        
+
         best_move = valid_moves[0]
         best_score = float('-inf')
-        
+
         for move in valid_moves:
             new_board, _ = simulate_move(board, move)
             score = self.evaluate(new_board)
             if score > best_score:
                 best_score = score
                 best_move = move
-        
+
         return best_move

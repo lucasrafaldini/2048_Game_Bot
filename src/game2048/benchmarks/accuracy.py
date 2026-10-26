@@ -19,8 +19,8 @@ from __future__ import annotations
 
 import math
 import random
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Optional
 
 from ..core.board import Board2048
 from ..core.constants import Direction
@@ -34,10 +34,10 @@ from ..core.fast import (
 
 __all__ = [
     "AccuracyReport",
+    "FastSummary",
     "fuzz_moves_equivalence",
     "replay_games_equivalence",
     "run_accuracy_suite",
-    "FastSummary",
     "summarize_results",
     "tile_reach_probabilities",
     "turn_statistics",
@@ -101,7 +101,7 @@ def _random_board(rng: random.Random, max_exp: int = 9) -> list[list[int]]:
 def fuzz_moves_equivalence(
     n_boards: int = 2000,
     seed: int = 42,
-    directions: Optional[list[Direction]] = None,
+    directions: list[Direction] | None = None,
 ) -> AccuracyReport:
     """
     Fuzz-test: compare fast engine move results against the reference engine.
@@ -155,7 +155,7 @@ def replay_games_equivalence(
     for i in range(n_games):
         # --- Fast engine game (recorded) ---
         fast = FastGame(seed=seed + i)
-        spawns: list[Optional[tuple[int, int, int]]] = list(fast.spawns)  # 2 initial
+        spawns: list[tuple[int, int, int] | None] = list(fast.spawns)  # 2 initial
         move_log: list[Direction] = []
         grid_log: list[list[list[int]]] = []
         score_log: list[int] = []
@@ -181,11 +181,11 @@ def replay_games_equivalence(
         ref = Board2048()
         report.turns_compared += len(move_log)
         ok = True
-        for j, spawn in enumerate(spawns[:2]):
+        for spawn in spawns[:2]:
             if spawn:
                 ref._grid[spawn[0]][spawn[1]] = spawn[2]
         for idx, d in enumerate(move_log):
-            ref_changed, ref_gained = ref.move(d)
+            ref_changed, _ = ref.move(d)
             if not ref_changed:
                 report.mismatches.append(
                     f"game={i} turn={idx}: reference rejected move {d.name} "

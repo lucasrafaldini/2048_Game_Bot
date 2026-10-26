@@ -1,20 +1,25 @@
 """AI agents for 2048."""
 
 from .base import Agent, BaseAgent, HeuristicAgent
+from .expectimax import (
+    ExpectimaxAgent,
+    ExpectimaxConfig,
+    OptimizedExpectimaxAgent,
+    create_expectimax_agent,
+)
 from .heuristic import (
-    RandomAgent,
     GreedyAgent,
     NStepLookaheadAgent,
+    RandomAgent,
     WeightedGreedyAgent,
-    create_snake_agent,
     create_monotonic_agent,
+    create_snake_agent,
 )
-from .expectimax import ExpectimaxAgent, OptimizedExpectimaxAgent, ExpectimaxConfig, create_expectimax_agent
 from .mcts import MCTSAgent, MCTSConfig, create_mcts_agent
 
 # RL agents (optional)
 try:
-    from .rl import RLAgent, DQNAgent, PPOAgent, create_random_rl_agent, train_dqn, train_ppo
+    from .rl import DQNAgent, PPOAgent, RLAgent, create_random_rl_agent, train_dqn, train_ppo
     _RL_AVAILABLE = True
 except ImportError:
     _RL_AVAILABLE = False
@@ -24,27 +29,27 @@ except ImportError:
 __all__ = [
     "Agent",
     "BaseAgent",
-    "HeuristicAgent",
-    "RandomAgent",
-    "GreedyAgent",
-    "NStepLookaheadAgent",
-    "WeightedGreedyAgent",
-    "create_snake_agent",
-    "create_monotonic_agent",
     "ExpectimaxAgent",
-    "OptimizedExpectimaxAgent",
     "ExpectimaxConfig",
-    "create_expectimax_agent",
+    "GreedyAgent",
+    "HeuristicAgent",
     "MCTSAgent",
     "MCTSConfig",
+    "NStepLookaheadAgent",
+    "OptimizedExpectimaxAgent",
+    "RandomAgent",
+    "WeightedGreedyAgent",
+    "create_expectimax_agent",
     "create_mcts_agent",
+    "create_monotonic_agent",
+    "create_snake_agent",
 ]
 
 if _RL_AVAILABLE:
     __all__ += [
-        "RLAgent",
         "DQNAgent",
         "PPOAgent",
+        "RLAgent",
         "create_random_rl_agent",
         "train_dqn",
         "train_ppo",

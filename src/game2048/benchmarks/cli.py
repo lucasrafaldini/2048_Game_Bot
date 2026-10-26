@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+import functools
 import json
-import yaml
 from pathlib import Path
-from typing import Optional
 
 import typer
+import yaml
 from rich.console import Console
 from rich.table import Table
 
+from ..ai import AGENT_REGISTRY, get_agent
 from .runner import BenchmarkConfig, BenchmarkRunner, run_quick_benchmark
-from ..ai import get_agent, list_agents, AGENT_REGISTRY
 
 app = typer.Typer(
     name="game2048-benchmark",
@@ -26,11 +26,11 @@ console = Console()
 def run(
     agent: str = typer.Argument(..., help="Agent name (use 'list' to see available)"),
     games: int = typer.Option(100, "-n", "--games", help="Number of games to play"),
-    seeds: Optional[str] = typer.Option(None, "-s", "--seeds", help="Comma-separated list of seeds"),
+    seeds: str | None = typer.Option(None, "-s", "--seeds", help="Comma-separated list of seeds"),
     max_moves: int = typer.Option(10000, "-m", "--max-moves", help="Maximum moves per game"),
     parallel: bool = typer.Option(True, "-p/--no-parallel", help="Run in parallel"),
-    workers: Optional[int] = typer.Option(None, "-w", "--workers", help="Number of worker processes"),
-    output: Optional[Path] = typer.Option(None, "-o", "--output", help="Output JSON file"),
+    workers: int | None = typer.Option(None, "-w", "--workers", help="Number of worker processes"),
+    output: Path | None = typer.Option(None, "-o", "--output", help="Output JSON file"),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose output"),
     history: bool = typer.Option(False, "--history", help="Record board history"),
 ):
@@ -38,17 +38,18 @@ def run(
     if agent == "list":
         list_agents_cmd()
         return
-    
+
     try:
-        agent_factory = lambda: get_agent(agent)
+        get_agent(agent)  # valida o nome do agent
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
-        raise typer.Exit(1)
-    
+        raise typer.Exit(1) from e
+    agent_factory = functools.partial(_agent_factory, agent)
+
     seed_list = None
     if seeds:
         seed_list = [int(s.strip()) for s in seeds.split(",")]
-    
+
     config = BenchmarkConfig(
         num_games=games,
         seeds=seed_list,
@@ -58,10 +59,10 @@ def run(
         verbose=verbose,
         record_history=history,
     )
-    
+
     runner = BenchmarkRunner(config)
     result = runner.run(agent_factory, agent)
-    
+
     if output:
         with open(output, "w") as f:
             json.dump(result.to_dict(), f, indent=2)
@@ -85,16 +86,16 @@ def _agent_factory(agent_name: str):
 def compare(
     agents: str = typer.Argument(..., help="Comma-separated agent names"),
     games: int = typer.Option(100, "-n", "--games", help="Number of games per agent"),
-    seeds: Optional[str] = typer.Option(None, "-s", "--seeds", help="Comma-separated list of seeds"),
+    seeds: str | None = typer.Option(None, "-s", "--seeds", help="Comma-separated list of seeds"),
     max_moves: int = typer.Option(10000, "-m", "--max-moves", help="Maximum moves per game"),
     parallel: bool = typer.Option(True, "-p/--no-parallel", help="Run in parallel"),
-    workers: Optional[int] = typer.Option(None, "-w", "--workers", help="Number of worker processes"),
-    output: Optional[Path] = typer.Option(None, "-o", "--output", help="Output JSON file"),
+    workers: int | None = typer.Option(None, "-w", "--workers", help="Number of worker processes"),
+    output: Path | None = typer.Option(None, "-o", "--output", help="Output JSON file"),
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Verbose output"),
 ):
     """Compare multiple agents."""
     agent_names = [a.strip() for a in agents.split(",")]
-    
+
     factories = {}
     for name in agent_names:
         try:
@@ -103,12 +104,12 @@ def compare(
             factories[name] = functools.partial(_agent_factory, name)
         except ValueError as e:
             console.print(f"[red]Error: {e}[/red]")
-            raise typer.Exit(1)
-    
+            raise typer.Exit(1) from e
+
     seed_list = None
     if seeds:
         seed_list = [int(s.strip()) for s in seeds.split(",")]
-    
+
     config = BenchmarkConfig(
         num_games=games,
         seeds=seed_list,
@@ -117,10 +118,10 @@ def compare(
         num_workers=workers,
         verbose=verbose,
     )
-    
+
     runner = BenchmarkRunner(config)
     comparison = runner.compare(factories)
-    
+
     if output:
         with open(output, "w") as f:
             json.dump(comparison.to_dict(), f, indent=2)
@@ -147,7 +148,7 @@ def list_agents_cmd() -> None:
     table = Table(title="Available Agents")
     table.add_column("Name", style="cyan")
     table.add_column("Description", style="green")
-    
+
     descriptions = {
         "random": "Random valid moves",
         "greedy": "Greedy heuristic (1-step lookahead)",
@@ -162,11 +163,11 @@ def list_agents_cmd() -> None:
         "mcts-fast": "MCTS 50 simulations, 0.05s time limit",
         "mcts-deep": "MCTS 500 simulations, 0.5s time limit",
     }
-    
+
     for name in sorted(AGENT_REGISTRY.keys()):
         desc = descriptions.get(name, "Custom agent")
         table.add_row(name, desc)
-    
+
     console.print(table)
 
 
@@ -195,49 +196,49 @@ def config(
             "num_games": 50,
         },
     }
-    
+
     with open(output, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
-    
+
     console.print(f"[green]Config template saved to {output}[/green]")
 
 
 @app.command()
 def from_config(
     config_file: Path = typer.Argument(..., help="Benchmark config YAML file"),
-    output: Optional[Path] = typer.Option(None, "-o", "--output", help="Output JSON file"),
+    output: Path | None = typer.Option(None, "-o", "--output", help="Output JSON file"),
 ):
     """Run benchmark from config file."""
     import functools
-    
+
     with open(config_file) as f:
         config = yaml.safe_load(f)
-    
+
     bench_config = config.get("benchmark", {})
     runner_config = BenchmarkConfig(**bench_config)
     runner = BenchmarkRunner(runner_config)
-    
+
     # Single agent runs
     agents_config = config.get("agents", {})
-    for name, params in agents_config.items():
+    for name in agents_config:
         try:
             if name in AGENT_REGISTRY:
                 factory = functools.partial(_agent_factory, name)
             else:
                 console.print(f"[yellow]Unknown agent: {name}[/yellow]")
                 continue
-            
+
             runner.run(factory, name)
         except Exception as e:
             console.print(f"[red]Error running {name}: {e}[/red]")
-    
+
     # Comparison
     compare_config = config.get("comparison", {})
     if compare_config:
         agent_names = compare_config.get("agents", [])
         factories = {name: functools.partial(_agent_factory, name) for name in agent_names}
         comparison = runner.compare(factories)
-        
+
         if output:
             with open(output, "w") as f:
                 json.dump(comparison.to_dict(), f, indent=2)
@@ -252,13 +253,13 @@ def fast(
     ),
     games: int = typer.Option(1000, "-n", "--games", help="Number of games"),
     seed: int = typer.Option(0, "-s", "--seed", help="Base seed (game i uses seed+i)"),
-    workers: Optional[int] = typer.Option(None, "-w", "--workers", help="Worker processes"),
+    workers: int | None = typer.Option(None, "-w", "--workers", help="Worker processes"),
     verify: bool = typer.Option(
         True, "--verify/--no-verify",
         help="Verify accuracy against the reference engine before benchmarking",
     ),
     max_moves: int = typer.Option(100_000, "-m", "--max-moves", help="Max moves per game"),
-    output: Optional[Path] = typer.Option(None, "-o", "--output", help="Output JSON file"),
+    output: Path | None = typer.Option(None, "-o", "--output", help="Output JSON file"),
 ):
     """
     High-speed benchmark using the self-contained bitboard engine.
@@ -268,6 +269,7 @@ def fast(
     """
     import functools
 
+    from ..core.fast import batch_simulate, greedy_policy
     from .accuracy import (
         fuzz_moves_equivalence,
         replay_games_equivalence,
@@ -275,7 +277,6 @@ def fast(
         tile_reach_probabilities,
         turn_statistics,
     )
-    from ..core.fast import batch_simulate, greedy_policy
 
     # --- Accuracy verification -------------------------------------------------
     if verify:

@@ -3,22 +3,19 @@
 from __future__ import annotations
 
 import random
-from typing import Optional
 
-import numpy as np
-
-from .base import Agent, BaseAgent, HeuristicAgent
 from ..core.board import Board2048, simulate_move
 from ..core.constants import Direction
+from .base import BaseAgent, HeuristicAgent
 
 
 class RandomAgent(BaseAgent):
     """Agent that picks random valid moves."""
-    
-    def __init__(self, seed: Optional[int] = None):
+
+    def __init__(self, seed: int | None = None):
         super().__init__("Random")
         self._rng = random.Random(seed)
-    
+
     def get_move(self, board: Board2048) -> Direction:
         valid = board.get_valid_moves()
         return self._rng.choice(valid) if valid else Direction.UP
@@ -26,51 +23,51 @@ class RandomAgent(BaseAgent):
 
 class GreedyAgent(HeuristicAgent):
     """Agent that picks the move with highest immediate heuristic score."""
-    
+
     def __init__(self, name: str = "Greedy"):
         super().__init__(name)
-    
+
     def get_move(self, board: Board2048) -> Direction:
         valid_moves = board.get_valid_moves()
         if not valid_moves:
             return Direction.UP
-        
+
         best_move = valid_moves[0]
         best_score = float('-inf')
-        
+
         for move in valid_moves:
             new_board, _ = simulate_move(board, move)
             score = self.evaluate(new_board)
             if score > best_score:
                 best_score = score
                 best_move = move
-        
+
         return best_move
 
 
 class NStepLookaheadAgent(HeuristicAgent):
     """Agent that looks N moves ahead using expectimax."""
-    
+
     def __init__(self, depth: int = 3, name: str | None = None):
         super().__init__(name or f"Lookahead-{depth}")
         self.depth = depth
-    
+
     def get_move(self, board: Board2048) -> Direction:
         valid_moves = board.get_valid_moves()
         if not valid_moves:
             return Direction.UP
-        
+
         best_move = valid_moves[0]
         best_value = float('-inf')
-        
+
         for move in valid_moves:
             value = self._expectimax(board, move, self.depth, True)
             if value > best_value:
                 best_value = value
                 best_move = move
-        
+
         return best_move
-    
+
     def _expectimax(
         self,
         board: Board2048,
@@ -80,12 +77,12 @@ class NStepLookaheadAgent(HeuristicAgent):
     ) -> float:
         self._nodes_evaluated += 1
         self._max_depth_reached = max(self._max_depth_reached, self.depth - depth)
-        
+
         new_board, _ = simulate_move(board, move)
-        
+
         if depth == 0 or new_board.get_state() != "playing":
             return self.evaluate(new_board)
-        
+
         if is_player:
             # Player's turn: maximize
             best = float('-inf')
@@ -98,7 +95,7 @@ class NStepLookaheadAgent(HeuristicAgent):
             empty = new_board.empty_cells
             if not empty:
                 return self.evaluate(new_board)
-            
+
             total = 0.0
             for r, c in empty:
                 for value, prob in [(2, 0.9), (4, 0.1)]:
@@ -116,7 +113,7 @@ class NStepLookaheadAgent(HeuristicAgent):
 
 class WeightedGreedyAgent(HeuristicAgent):
     """Greedy agent with configurable weights."""
-    
+
     def __init__(
         self,
         weights: dict[str, float] | None = None,
@@ -125,22 +122,22 @@ class WeightedGreedyAgent(HeuristicAgent):
         super().__init__(name)
         if weights:
             self.weights.update(weights)
-    
+
     def get_move(self, board: Board2048) -> Direction:
         valid_moves = board.get_valid_moves()
         if not valid_moves:
             return Direction.UP
-        
+
         best_move = valid_moves[0]
         best_score = float('-inf')
-        
+
         for move in valid_moves:
             new_board, _ = simulate_move(board, move)
             score = self.evaluate(new_board)
             if score > best_score:
                 best_score = score
                 best_move = move
-        
+
         return best_move
 
 

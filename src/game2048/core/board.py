@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import copy
 import random
-from typing import Literal
 
 import numpy as np
 
 from .constants import (
     BOARD_SIZE,
-    Direction,
     NEW_TILE_PROBABILITIES,
     NEW_TILE_VALUES,
     Board,
+    Direction,
     GameState,
 )
 
@@ -21,11 +19,11 @@ from .constants import (
 class Board2048:
     """
     2048 game board with pure Python logic.
-    
+
     Uses numpy internally for performance but exposes pure Python API.
     """
 
-    __slots__ = ("_grid", "_score", "_moves", "_history")
+    __slots__ = ("_grid", "_history", "_moves", "_score")
 
     def __init__(self, grid: Board | None = None, score: int = 0):
         if grid is None:
@@ -111,26 +109,26 @@ class Board2048:
     def move(self, direction: Direction) -> tuple[bool, int]:
         """
         Execute a move in the given direction.
-        
+
         Returns:
             (changed, score_gained): Whether board changed and points scored.
         """
         # Save state for undo
         self._history.append((self.grid, self._score, direction))
-        
+
         # Rotate grid to make move always "left"
         rotated = self._rotate_to_left(direction)
         self._grid = rotated
-        
+
         changed, gained = self._move_left()
-        
+
         # Rotate back
         self._grid = self._rotate_from_left(direction)
-        
+
         if changed:
             self._score += gained
             self._moves += 1
-            
+
         return changed, gained
 
     def _rotate_to_left(self, direction: Direction) -> Board:
@@ -224,7 +222,7 @@ class Board2048:
 def simulate_move(board: Board2048, direction: Direction) -> tuple[Board2048, int]:
     """
     Simulate a move without modifying the original board.
-    
+
     Returns:
         (new_board, score_gained)
     """

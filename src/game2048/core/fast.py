@@ -27,25 +27,25 @@ from __future__ import annotations
 
 import random
 import time
+from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
-from typing import Callable, Iterable, Optional
 
 from .constants import Direction
 
 __all__ = [
     "FastGame",
     "FastResult",
-    "grid_to_bits",
-    "bits_to_grid",
     "apply_move_bits",
+    "batch_simulate",
+    "bits_to_grid",
     "can_move_bits",
     "expectimax_bits",
-    "random_policy",
-    "greedy_policy",
-    "snake_policy",
     "expectimax_policy",
-    "batch_simulate",
+    "greedy_policy",
+    "grid_to_bits",
+    "random_policy",
+    "snake_policy",
 ]
 
 # ---------------------------------------------------------------------------
@@ -222,8 +222,7 @@ def max_exponent(bits: int) -> int:
     m = 0
     for i in range(16):
         e = (bits >> (4 * i)) & 0xF
-        if e > m:
-            m = e
+        m = max(m, e)
     return m
 
 
@@ -362,8 +361,7 @@ def expectimax_bits(bits: int, depth: int = 3) -> float:
                 total += 0.9 * expectimax_bits(with_two, depth - 1) + \
                     0.1 * expectimax_bits(with_four, depth - 1)
             v = total / len(empties)
-        if v > best:
-            best = v
+        best = max(best, v)
     return best
 
 
@@ -431,10 +429,19 @@ class FastGame:
             matching the reference engine).
     """
 
-    __slots__ = ("_rng", "_bits", "_score", "_moves", "_stop_on_win",
-                 "_score_curve", "_max_tile_curve", "_recording", "_spawn_log")
+    __slots__ = (
+        "_bits",
+        "_max_tile_curve",
+        "_moves",
+        "_recording",
+        "_rng",
+        "_score",
+        "_score_curve",
+        "_spawn_log",
+        "_stop_on_win",
+    )
 
-    def __init__(self, seed: Optional[int] = None, stop_on_win: bool = True):
+    def __init__(self, seed: int | None = None, stop_on_win: bool = True):
         self._rng = random.Random(seed)
         self._stop_on_win = stop_on_win
         self._bits = 0
@@ -443,7 +450,7 @@ class FastGame:
         self._recording = False
         self._score_curve: list[int] = []
         self._max_tile_curve: list[int] = []
-        self._spawn_log: list[Optional[tuple[int, int, int]]] = []
+        self._spawn_log: list[tuple[int, int, int] | None] = []
         self._spawn_initial()
 
     # -- state ---------------------------------------------------------------
@@ -473,12 +480,12 @@ class FastGame:
         return self._rng
 
     @property
-    def spawns(self) -> list[Optional[tuple[int, int, int]]]:
+    def spawns(self) -> list[tuple[int, int, int] | None]:
         """Spawn log: 2 initial tiles + one entry per attempted spawn after
         each moved turn. Entries may be None (board full)."""
         return list(self._spawn_log)
 
-    def reset(self, seed: Optional[int] = None) -> None:
+    def reset(self, seed: int | None = None) -> None:
         """Reset to a fresh game."""
         if seed is not None:
             self._rng = random.Random(seed)
@@ -494,7 +501,7 @@ class FastGame:
         for _ in range(2):
             self._spawn_tile()
 
-    def _spawn_tile(self) -> Optional[tuple[int, int, int]]:
+    def _spawn_tile(self) -> tuple[int, int, int] | None:
         """Spawn a random tile. Returns (r, c, value) or None.
 
         Every spawn attempt is appended to ``spawns`` (including None), so
@@ -565,7 +572,7 @@ class FastGame:
         if not (self._stop_on_win and state == "won"):
             for _ in range(max_moves):
                 direction = policy(self._bits)
-                moved, _, state = self.step(direction)
+                _, _, state = self.step(direction)
                 if state != "playing":
                     if state == "won" and not self._stop_on_win:
                         continue
@@ -631,7 +638,7 @@ def batch_simulate(
     policy_factory: Callable[[], Callable[[int], Direction]],
     n_games: int = 1000,
     seed: int = 0,
-    workers: Optional[int] = None,
+    workers: int | None = None,
     max_moves: int = 100_000,
     record_curves: bool = False,
     parallel: bool = True,
